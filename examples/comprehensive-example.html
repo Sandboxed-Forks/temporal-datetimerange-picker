@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <link type="text/css" rel="stylesheet" href="../dist/temporal-datetimerange-picker.css">
+        <title>temporal-datetimerange-picker comprehensive example.</title>
+        <style>
+            body {
+                font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+                max-width: 1100px;
+                margin: 2rem auto;
+                padding: 0 1rem;
+                color: #222;
+            }
+            h1 {
+                font-size: 1.5rem;
+                margin-bottom: 0.25rem;
+            }
+            p.intro {
+                color: #555;
+                margin-top: 0;
+            }
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 1rem;
+                margin-top: 1.5rem;
+            }
+            .card {
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                padding: 1rem;
+                background: #fafafa;
+            }
+            .card h2 {
+                font-size: 1rem;
+                margin: 0 0 0.35rem 0;
+            }
+            .card p.desc {
+                font-size: 0.85rem;
+                color: #555;
+                margin: 0 0 0.75rem 0;
+                min-height: 3.2em;
+            }
+            .card input[type="text"] {
+                width: 100%;
+                box-sizing: border-box;
+                padding: 0.4rem;
+                text-align: center;
+            }
+            .output {
+                margin-top: 0.5rem;
+                font-size: 0.8rem;
+                color: #0a6;
+                min-height: 1.2em;
+                word-break: break-word;
+            }
+            code {
+                background: #eee;
+                padding: 0.1rem 0.3rem;
+                border-radius: 3px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>temporal-datetimerange-picker &mdash; comprehensive example</h1>
+        <p class="intro">
+            One instance per card below, each configured with a different subset of options to show what's available.
+            Pick a date (or range) in any card and its resolved value appears underneath &mdash; that's the
+            <code>callback</code> firing with the picker's start/end dates.
+        </p>
+
+        <div class="grid">
+
+            <div class="card">
+                <h2>1. Default</h2>
+                <p class="desc">No options passed at all &mdash; every default applies: today's range, format <code>MM/DD/YYYY</code>, opens right, drops down.</p>
+                <input type="text" id="dtr-default" size="24">
+                <div class="output" id="dtr-default-output"></div>
+            </div>
+
+            <div class="card">
+                <h2>2. Predefined ranges</h2>
+                <p class="desc"><code>ranges</code> with a trailing "Custom Range" option (<code>showCustomRangeLabel</code>). Built directly with Temporal, no helper library needed.</p>
+                <input type="text" id="dtr-ranges" size="24">
+                <div class="output" id="dtr-ranges-output"></div>
+            </div>
+
+            <div class="card">
+                <h2>3. Single date picker</h2>
+                <p class="desc"><code>singleDatePicker: true</code> &mdash; one calendar, start and end are forced equal.</p>
+                <input type="text" id="dtr-single" size="24">
+                <div class="output" id="dtr-single-output"></div>
+            </div>
+
+            <div class="card">
+                <h2>4. Date &amp; time (24-hour)</h2>
+                <p class="desc"><code>timePicker: true</code>, <code>timePicker24Hour: true</code>, <code>timePickerIncrement: 15</code>.</p>
+                <input type="text" id="dtr-time24" size="24">
+                <div class="output" id="dtr-time24-output"></div>
+            </div>
+
+            <div class="card">
+                <h2>5. Date &amp; time (12-hour + seconds)</h2>
+                <p class="desc"><code>timePicker: true</code> with AM/PM and <code>timePickerSeconds: true</code>.</p>
+                <input type="text" id="dtr-time12sec" size="24">
+                <div class="output" id="dtr-time12sec-output"></div>
+            </div>
+
+            <div class="card">
+                <h2>6. Month/year dropdowns</h2>
+                <p class="desc"><code>showDropdowns: true</code> bounded to <code>minYear</code>/<code>maxYear</code> for fast navigation.</p>
+                <input type="text" id="dtr-dropdowns" size="24">
+                <div class="output" id="dtr-dropdowns-output"></div>
+            </div>
+
+            <div class="card">
+                <h2>7. Min / max date bounds</h2>
+                <p class="desc"><code>minDate</code>/<code>maxDate</code> passed as native <code>Temporal.PlainDateTime</code> objects (7 days back to 30 days ahead) &mdash; dates outside that window are disabled.</p>
+                <input type="text" id="dtr-minmax" size="24">
+                <div class="output" id="dtr-minmax-output"></div>
+            </div>
+
+            <div class="card">
+                <h2>8. Max span</h2>
+                <p class="desc"><code>maxSpan: { days: 6 }</code> &mdash; a Temporal duration-like object that caps how wide a range can be.</p>
+                <input type="text" id="dtr-maxspan" size="24">
+                <div class="output" id="dtr-maxspan-output"></div>
+            </div>
+
+            <div class="card">
+                <h2>9. Week numbers</h2>
+                <p class="desc"><code>showWeekNumbers: true</code> with <code>locale.firstDay: 1</code> (weeks start Monday).</p>
+                <input type="text" id="dtr-week" size="24">
+                <div class="output" id="dtr-week-output"></div>
+            </div>
+
+            <div class="card">
+                <h2>10. ISO week numbers</h2>
+                <p class="desc"><code>showISOWeekNumbers: true</code> &mdash; standard ISO-8601 week-of-year numbering.</p>
+                <input type="text" id="dtr-isoweek" size="24">
+                <div class="output" id="dtr-isoweek-output"></div>
+            </div>
+
+            <div class="card">
+                <h2>11. Custom locale</h2>
+                <p class="desc">French-style labels, <code>DD/MM/YYYY</code> format, custom separator, and a Monday-first week.</p>
+                <input type="text" id="dtr-locale" size="24">
+                <div class="output" id="dtr-locale-output"></div>
+            </div>
+
+            <div class="card">
+                <h2>12. Invalid &amp; custom dates</h2>
+                <p class="desc"><code>isInvalidDate</code> disables weekends; <code>isCustomDate</code> tags Wednesdays with a highlight class. Both receive the picker's date wrapper, which exposes <code>.day()</code> just like the old Moment-based one did.</p>
+                <input type="text" id="dtr-invalid" size="24">
+                <div class="output" id="dtr-invalid-output"></div>
+            </div>
+
+            <div class="card">
+                <h2>13. Auto-apply, unlinked calendars</h2>
+                <p class="desc"><code>autoApply: true</code> (no buttons, applies on second click), <code>linkedCalendars: false</code> (each calendar navigates independently), <code>opens: 'center'</code>.</p>
+                <input type="text" id="dtr-autoapply" size="24">
+                <div class="output" id="dtr-autoapply-output"></div>
+            </div>
+
+        </div>
+
+        <!-- Temporal ships natively in modern browsers (Firefox 139+, Chrome 144+). This polyfill
+             is only needed as a fallback for browsers without native support yet (e.g. Safari). -->
+        <script src="https://cdn.jsdelivr.net/npm/@js-temporal/polyfill/dist/index.umd.js" type="text/javascript"></script>
+        <script src="../dist/temporal-datetimerange-picker.js"></script>
+        <script>
+            var Temporal = window.Temporal || window.temporal.Temporal;
+
+            function startOfDay(t) { return t.with({ hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 }); }
+            function endOfDay(t) { return t.with({ hour: 23, minute: 59, second: 59, millisecond: 999, microsecond: 999, nanosecond: 999 }); }
+
+            // Writes the applied start/end into the card's output line. Shared by every instance below.
+            function report(outputId, format) {
+                var el = document.getElementById(outputId);
+                return function (start, end) {
+                    el.textContent = 'Selected: ' + start.format(format) + ' → ' + end.format(format);
+                };
+            }
+
+            window.addEventListener('load', function () {
+                var now = Temporal.Now.plainDateTimeISO();
+
+                // 1. Default - no options.
+                new DateRangePicker('dtr-default', {}, report('dtr-default-output', 'MM/DD/YYYY'));
+
+                // 2. Predefined ranges, built directly with Temporal.
+                new DateRangePicker('dtr-ranges', {
+                    ranges: {
+                        'Today': [startOfDay(now), endOfDay(now)],
+                        'Yesterday': [startOfDay(now.subtract({ days: 1 })), endOfDay(now.subtract({ days: 1 }))],
+                        'Last 7 Days': [startOfDay(now.subtract({ days: 6 })), endOfDay(now)],
+                        'This Month': [startOfDay(now.with({ day: 1 })), endOfDay(now.with({ day: now.daysInMonth }))]
+                    },
+                    showCustomRangeLabel: true
+                }, report('dtr-ranges-output', 'YYYY-MM-DD'));
+
+                // 3. Single date picker.
+                new DateRangePicker('dtr-single', {
+                    singleDatePicker: true
+                }, report('dtr-single-output', 'YYYY-MM-DD'));
+
+                // 4. Date & time, 24-hour, 15-minute increments.
+                new DateRangePicker('dtr-time24', {
+                    timePicker: true,
+                    timePicker24Hour: true,
+                    timePickerIncrement: 15,
+                    locale: { format: 'YYYY-MM-DD HH:mm' }
+                }, report('dtr-time24-output', 'YYYY-MM-DD HH:mm'));
+
+                // 5. Date & time, 12-hour with seconds.
+                new DateRangePicker('dtr-time12sec', {
+                    timePicker: true,
+                    timePickerSeconds: true,
+                    locale: { format: 'YYYY-MM-DD hh:mm:ss A' }
+                }, report('dtr-time12sec-output', 'YYYY-MM-DD hh:mm:ss A'));
+
+                // 6. Month/year dropdowns.
+                new DateRangePicker('dtr-dropdowns', {
+                    showDropdowns: true,
+                    minYear: now.year - 5,
+                    maxYear: now.year + 5
+                }, report('dtr-dropdowns-output', 'YYYY-MM-DD'));
+
+                // 7. Min/max date bounds, passed as native Temporal.PlainDateTime objects.
+                new DateRangePicker('dtr-minmax', {
+                    minDate: now.subtract({ days: 7 }),
+                    maxDate: now.add({ days: 30 })
+                }, report('dtr-minmax-output', 'YYYY-MM-DD'));
+
+                // 8. Max span - a Temporal duration-like object.
+                new DateRangePicker('dtr-maxspan', {
+                    maxSpan: { days: 6 }
+                }, report('dtr-maxspan-output', 'YYYY-MM-DD'));
+
+                // 9. Week numbers, Monday-first.
+                new DateRangePicker('dtr-week', {
+                    showWeekNumbers: true,
+                    locale: { firstDay: 1 }
+                }, report('dtr-week-output', 'YYYY-MM-DD'));
+
+                // 10. ISO week numbers.
+                new DateRangePicker('dtr-isoweek', {
+                    showISOWeekNumbers: true
+                }, report('dtr-isoweek-output', 'YYYY-MM-DD'));
+
+                // 11. Custom (French-style) locale.
+                new DateRangePicker('dtr-locale', {
+                    locale: {
+                        format: 'DD/MM/YYYY',
+                        separator: ' au ',
+                        applyLabel: 'Appliquer',
+                        cancelLabel: 'Annuler',
+                        daysOfWeek: ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'],
+                        monthNames: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'],
+                        firstDay: 1
+                    }
+                }, report('dtr-locale-output', 'DD/MM/YYYY'));
+
+                // 12. isInvalidDate / isCustomDate, using the picker's own date wrapper (.day() works like Moment's did).
+                new DateRangePicker('dtr-invalid', {
+                    isInvalidDate: function (d) {
+                        var day = d.day(); // 0 = Sunday .. 6 = Saturday
+                        return day === 0 || day === 6;
+                    },
+                    isCustomDate: function (d) {
+                        return d.day() === 3 ? 'weekday-3' : false;
+                    }
+                }, report('dtr-invalid-output', 'YYYY-MM-DD'));
+
+                // 13. Auto-apply, independently-navigable calendars, centered.
+                new DateRangePicker('dtr-autoapply', {
+                    autoApply: true,
+                    linkedCalendars: false,
+                    opens: 'center'
+                }, report('dtr-autoapply-output', 'YYYY-MM-DD'));
+            });
+        </script>
+    </body>
+</html>

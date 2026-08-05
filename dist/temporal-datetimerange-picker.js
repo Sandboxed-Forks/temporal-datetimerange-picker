@@ -12,6 +12,424 @@
 // IE browser doesn't support "class"
 var DateRangePicker;
 (function () {
+
+    // ------------------------------------------------------------------
+    // Temporal resolution: prefer a native implementation (Temporal
+    // shipped in ES2026 / Firefox 139+ / Chrome 144+); fall back to the
+    // official polyfill's UMD global (window.temporal.Temporal) for
+    // browsers without native support yet (e.g. Safari). See:
+    // https://github.com/js-temporal/temporal-polyfill
+    // ------------------------------------------------------------------
+    var TemporalNS = (typeof Temporal !== 'undefined' && Temporal)
+        ? Temporal
+        : (typeof window !== 'undefined' && window.Temporal)
+            ? window.Temporal
+            : (typeof window !== 'undefined' && window.temporal && window.temporal.Temporal)
+                ? window.temporal.Temporal
+                : undefined;
+
+    if (!TemporalNS) {
+        throw new Error(
+            'DateRangePicker requires the Temporal API. Your browser doesn\'t ' +
+            'support it natively yet - include the official polyfill before ' +
+            'this script: https://github.com/js-temporal/temporal-polyfill'
+        );
+    }
+
+    // ------------------------------------------------------------------
+    // TDateTime: a small Moment.js-compatible wrapper around a single
+    // Temporal.PlainDateTime (local/naive - no timezone, matching how
+    // this file always used unzoned moment() instances). It intentionally
+    // only implements the subset of Moment's mutable, chainable API that
+    // this file relies on.
+    // ------------------------------------------------------------------
+
+    function pad(n, len) {
+        var s = String(Math.abs(n));
+        while (s.length < len) s = '0' + s;
+        return (n < 0 ? '-' : '') + s;
+    }
+
+    function escapeRegExp(s) {
+        return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // Longest tokens first so e.g. YYYY is matched before YY.
+    var TOKEN_RE = /YYYY|YY|MM|M|DD|D|HH|H|hh|h|mm|m|ss|s|A|a/g;
+
+    var UNIT_MAP = {
+        year: 'years', years: 'years',
+        month: 'months', months: 'months',
+        week: 'weeks', weeks: 'weeks',
+        day: 'days', days: 'days',
+        hour: 'hours', hours: 'hours',
+        minute: 'minutes', minutes: 'minutes',
+        second: 'seconds', seconds: 'seconds'
+    };
+
+    function parseWithFormat(str, format) {
+        var fieldOrder = [];
+        var pattern = '';
+        var lastIndex = 0;
+
+        format.replace(TOKEN_RE, function (token, offset) {
+            pattern += escapeRegExp(format.slice(lastIndex, offset));
+            switch (token) {
+                case 'YYYY': pattern += '(\\d{4})'; fieldOrder.push('year4'); break;
+                case 'YY':   pattern += '(\\d{2})'; fieldOrder.push('year2'); break;
+                case 'MM':   pattern += '(\\d{1,2})'; fieldOrder.push('month'); break;
+                case 'M':    pattern += '(\\d{1,2})'; fieldOrder.push('month'); break;
+                case 'DD':   pattern += '(\\d{1,2})'; fieldOrder.push('day'); break;
+                case 'D':    pattern += '(\\d{1,2})'; fieldOrder.push('day'); break;
+                case 'HH':   pattern += '(\\d{1,2})'; fieldOrder.push('hour'); break;
+                case 'H':    pattern += '(\\d{1,2})'; fieldOrder.push('hour'); break;
+                case 'hh':   pattern += '(\\d{1,2})'; fieldOrder.push('hour'); break;
+                case 'h':    pattern += '(\\d{1,2})'; fieldOrder.push('hour'); break;
+                case 'mm':   pattern += '(\\d{1,2})'; fieldOrder.push('minute'); break;
+                case 'm':    pattern += '(\\d{1,2})'; fieldOrder.push('minute'); break;
+                case 'ss':   pattern += '(\\d{1,2})'; fieldOrder.push('second'); break;
+                case 's':    pattern += '(\\d{1,2})'; fieldOrder.push('second'); break;
+                case 'A':    pattern += '(AM|PM)'; fieldOrder.push('meridiem'); break;
+                case 'a':    pattern += '(am|pm)'; fieldOrder.push('meridiem'); break;
+            }
+            lastIndex = offset + token.length;
+            return token;
+        });
+        pattern += escapeRegExp(format.slice(lastIndex));
+
+        var match = new RegExp('^' + pattern + '$').exec((str || '').trim());
+        if (!match)
+            throw new Error('Invalid date "' + str + '" for format "' + format + '"');
+
+        var fields = { year: 1970, month: 1, day: 1, hour: 0, minute: 0, second: 0 };
+        var meridiem = null;
+        for (var i = 0; i < fieldOrder.length; i++) {
+            var raw = match[i + 1];
+            switch (fieldOrder[i]) {
+                case 'year4': fields.year = parseInt(raw, 10); break;
+                case 'year2': fields.year = 2000 + parseInt(raw, 10); break;
+                case 'month': fields.month = parseInt(raw, 10); break;
+                case 'day': fields.day = parseInt(raw, 10); break;
+                case 'hour': fields.hour = parseInt(raw, 10); break;
+                case 'minute': fields.minute = parseInt(raw, 10); break;
+                case 'second': fields.second = parseInt(raw, 10); break;
+                case 'meridiem': meridiem = raw.toUpperCase(); break;
+            }
+        }
+        if (meridiem) {
+            if (meridiem === 'PM' && fields.hour < 12) fields.hour += 12;
+            if (meridiem === 'AM' && fields.hour === 12) fields.hour = 0;
+        }
+        return TemporalNS.PlainDateTime.from(fields);
+    }
+
+    function toPlainDateTime(input, format) {
+        if (input === undefined || input === null)
+            return TemporalNS.Now.plainDateTimeISO();
+
+        if (input instanceof TDateTime)
+            return input._dt;
+
+        if (typeof TemporalNS.PlainDateTime === 'function' && input instanceof TemporalNS.PlainDateTime)
+            return input;
+
+        if (typeof TemporalNS.ZonedDateTime === 'function' && input instanceof TemporalNS.ZonedDateTime)
+            return input.toPlainDateTime();
+
+        if (typeof TemporalNS.PlainDate === 'function' && input instanceof TemporalNS.PlainDate)
+            return input.toPlainDateTime();
+
+        if (input instanceof Date) {
+            return TemporalNS.PlainDateTime.from({
+                year: input.getFullYear(),
+                month: input.getMonth() + 1,
+                day: input.getDate(),
+                hour: input.getHours(),
+                minute: input.getMinutes(),
+                second: input.getSeconds(),
+                millisecond: input.getMilliseconds()
+            });
+        }
+
+        if (Array.isArray(input)) {
+            return TemporalNS.PlainDateTime.from({
+                year: input[0],
+                month: (typeof input[1] === 'number' ? input[1] : 0) + 1,
+                day: typeof input[2] === 'number' ? input[2] : 1,
+                hour: input[3] || 0,
+                minute: input[4] || 0,
+                second: input[5] || 0
+            });
+        }
+
+        if (typeof input === 'string') {
+            if (format)
+                return parseWithFormat(input, format);
+            return TemporalNS.PlainDateTime.from(input);
+        }
+
+        // last resort: a Temporal-compatible property bag (e.g. PlainYearMonth-like)
+        return TemporalNS.PlainDateTime.from(input);
+    }
+
+    // ---- locale week-number helpers (ported from Moment's default en
+    // locale: dow=0 (Sunday), doy=6 - this file never syncs Moment's
+    // internal locale to `this.locale.firstDay`, so week() always used
+    // this fixed default; that behavior is preserved here) ----
+
+    function isLeapYear(year) {
+        return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+    }
+
+    function daysInYear(year) {
+        return isLeapYear(year) ? 366 : 365;
+    }
+
+    function firstWeekOffset(year, dow, doy) {
+        var fwd = 7 + dow - doy;
+        var janFwd = TemporalNS.PlainDate.from({ year: year, month: 1, day: 1 }).add({ days: fwd - 1 });
+        var fwdlw = (7 + (janFwd.dayOfWeek % 7) - dow) % 7;
+        return -fwdlw + fwd - 1;
+    }
+
+    function weeksInYear(year, dow, doy) {
+        var weekOffset = firstWeekOffset(year, dow, doy);
+        var weekOffsetNext = firstWeekOffset(year + 1, dow, doy);
+        return (daysInYear(year) - weekOffset + weekOffsetNext) / 7;
+    }
+
+    function localeWeek(dt) {
+        var dow = 0, doy = 6;
+        var weekOffset = firstWeekOffset(dt.year, dow, doy);
+        var week = Math.floor((dt.dayOfYear - weekOffset - 1) / 7) + 1;
+        if (week < 1)
+            return Math.round(week + weeksInYear(dt.year - 1, dow, doy));
+        if (week > weeksInYear(dt.year, dow, doy))
+            return Math.round(week - weeksInYear(dt.year, dow, doy));
+        return Math.round(week);
+    }
+
+    function isoWeekNumber(dt) {
+        var isoDow = dt.dayOfWeek;
+        var thursday = TemporalNS.PlainDate.from({ year: dt.year, month: dt.month, day: dt.day }).add({ days: 4 - isoDow });
+        return Math.floor((thursday.dayOfYear - 1) / 7) + 1;
+    }
+
+    function TDateTime(input, format) {
+        try {
+            this._dt = toPlainDateTime(input, format);
+            this._valid = true;
+        } catch (e) {
+            this._dt = TemporalNS.PlainDateTime.from({ year: 1970, month: 1, day: 1 });
+            this._valid = false;
+        }
+    }
+
+    function toComparableDt(dt, granularity) {
+        switch (granularity) {
+            case 'day':
+                return dt.with({ hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 });
+            case 'minute':
+                return dt.with({ second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 });
+            default:
+                return dt;
+        }
+    }
+
+    function extractDt(other) {
+        if (other instanceof TDateTime) return other._dt;
+        if (other instanceof Date) return toPlainDateTime(other);
+        return other; // assume a Temporal.PlainDateTime already
+    }
+
+    TDateTime.prototype = {
+
+        constructor: TDateTime,
+
+        isValid: function () {
+            return this._valid;
+        },
+
+        clone: function () {
+            var c = new TDateTime();
+            c._dt = this._dt;
+            c._valid = this._valid;
+            return c;
+        },
+
+        startOf: function (unit) {
+            if (unit === 'day')
+                this._dt = this._dt.with({ hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 });
+            return this;
+        },
+
+        endOf: function (unit) {
+            if (unit === 'day')
+                this._dt = this._dt.with({ hour: 23, minute: 59, second: 59, millisecond: 999, microsecond: 999, nanosecond: 999 });
+            return this;
+        },
+
+        add: function (amount, unit) {
+            var dur;
+            if (unit === undefined) {
+                dur = amount;
+            } else {
+                dur = {};
+                dur[UNIT_MAP[unit] || unit] = amount;
+            }
+            this._dt = this._dt.add(dur);
+            return this;
+        },
+
+        subtract: function (amount, unit) {
+            var dur;
+            if (unit === undefined) {
+                dur = amount;
+            } else {
+                dur = {};
+                dur[UNIT_MAP[unit] || unit] = amount;
+            }
+            this._dt = this._dt.subtract(dur);
+            return this;
+        },
+
+        isBefore: function (other, granularity) {
+            var a = toComparableDt(this._dt, granularity);
+            var b = toComparableDt(extractDt(other), granularity);
+            return TemporalNS.PlainDateTime.compare(a, b) < 0;
+        },
+
+        isAfter: function (other, granularity) {
+            var a = toComparableDt(this._dt, granularity);
+            var b = toComparableDt(extractDt(other), granularity);
+            return TemporalNS.PlainDateTime.compare(a, b) > 0;
+        },
+
+        isSame: function (other, granularity) {
+            var a = toComparableDt(this._dt, granularity);
+            var b = toComparableDt(extractDt(other), granularity);
+            return TemporalNS.PlainDateTime.compare(a, b) === 0;
+        },
+
+        format: function (fmt) {
+            var dt = this._dt;
+            if (!fmt)
+                return dt.toString();
+            var hour24 = dt.hour;
+            var hour12 = hour24 % 12; if (hour12 === 0) hour12 = 12;
+            var meridiem = hour24 < 12 ? 'AM' : 'PM';
+            return fmt.replace(TOKEN_RE, function (token) {
+                switch (token) {
+                    case 'YYYY': return pad(dt.year, 4);
+                    case 'YY': return pad(((dt.year % 100) + 100) % 100, 2);
+                    case 'MM': return pad(dt.month, 2);
+                    case 'M': return String(dt.month);
+                    case 'DD': return pad(dt.day, 2);
+                    case 'D': return String(dt.day);
+                    case 'HH': return pad(hour24, 2);
+                    case 'H': return String(hour24);
+                    case 'hh': return pad(hour12, 2);
+                    case 'h': return String(hour12);
+                    case 'mm': return pad(dt.minute, 2);
+                    case 'm': return String(dt.minute);
+                    case 'ss': return pad(dt.second, 2);
+                    case 's': return String(dt.second);
+                    case 'A': return meridiem;
+                    case 'a': return meridiem.toLowerCase();
+                    default: return token;
+                }
+            });
+        },
+
+        date: function (value) {
+            if (value === undefined) return this._dt.day;
+            this._dt = this._dt.with({ day: value });
+            return this;
+        },
+
+        month: function (value) {
+            if (value === undefined) return this._dt.month - 1;
+            this._dt = this._dt.with({ month: value + 1 });
+            return this;
+        },
+
+        year: function (value) {
+            if (value === undefined) return this._dt.year;
+            this._dt = this._dt.with({ year: value });
+            return this;
+        },
+
+        hour: function (value) {
+            if (value === undefined) return this._dt.hour;
+            this._dt = this._dt.with({ hour: value });
+            return this;
+        },
+
+        minute: function (value) {
+            if (value === undefined) return this._dt.minute;
+            this._dt = this._dt.with({ minute: value });
+            return this;
+        },
+
+        second: function (value) {
+            if (value === undefined) return this._dt.second;
+            this._dt = this._dt.with({ second: value });
+            return this;
+        },
+
+        day: function () {
+            // Temporal's dayOfWeek is Monday=1..Sunday=7; Moment's day() is Sunday=0..Saturday=6.
+            return this._dt.dayOfWeek % 7;
+        },
+
+        isoWeekday: function () {
+            return this._dt.dayOfWeek;
+        },
+
+        daysInMonth: function () {
+            return this._dt.daysInMonth;
+        },
+
+        week: function () {
+            return localeWeek(this._dt);
+        },
+
+        isoWeek: function () {
+            return isoWeekNumber(this._dt);
+        },
+
+        valueOf: function () {
+            var dt = this._dt;
+            return ((((dt.year * 100 + dt.month) * 100 + dt.day) * 100 + dt.hour) * 100 + dt.minute) * 100 + dt.second;
+        },
+
+        toString: function () {
+            return this._dt.toString();
+        }
+
+    };
+
+    TDateTime.prototype.weekday = TDateTime.prototype.day;
+
+    function td(input, format) {
+        return new TDateTime(input, format);
+    }
+
+    td.weekdaysMin = function () {
+        return ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+    };
+
+    td.monthsShort = function () {
+        return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    };
+
+    td.localeData = function () {
+        return {
+            longDateFormat: function () { return 'MM/DD/YYYY'; },
+            firstDayOfWeek: function () { return 0; }
+        };
+    };
+
     DateRangePicker = function (element, options, cb) {
 
         //default settings for options
@@ -20,16 +438,16 @@ var DateRangePicker;
             this.element = document.getElementById(element);
         else
             this.element = element;
-        this.startDate = moment().startOf('day');
-        this.endDate = moment().endOf('day');
+        this.startDate = td().startOf('day');
+        this.endDate = td().endOf('day');
         this.minDate = false;
         this.maxDate = false;
         this.maxSpan = false;
         this.autoApply = false;
         this.singleDatePicker = false;
         this.showDropdowns = false;
-        this.minYear = moment().subtract(100, 'year').format('YYYY');
-        this.maxYear = moment().add(100, 'year').format('YYYY');
+        this.minYear = td().subtract(100, 'year').format('YYYY');
+        this.maxYear = td().add(100, 'year').format('YYYY');
         this.showWeekNumbers = false;
         this.showISOWeekNumbers = false;
         this.showCustomRangeLabel = true;
@@ -56,15 +474,15 @@ var DateRangePicker;
 
         this.locale = {
             direction: 'ltr',
-            format: moment.localeData().longDateFormat('L'),
+            format: td.localeData().longDateFormat('L'),
             separator: ' - ',
             applyLabel: 'Apply',
             cancelLabel: 'Cancel',
             weekLabel: 'W',
             customRangeLabel: 'Custom Range',
-            daysOfWeek: moment.weekdaysMin(),
-            monthNames: moment.monthsShort(),
-            firstDay: moment.localeData().firstDayOfWeek()
+            daysOfWeek: td.weekdaysMin(),
+            monthNames: td.monthsShort(),
+            firstDay: td.localeData().firstDayOfWeek()
         };
 
         this.callback = function() { };
@@ -152,28 +570,28 @@ var DateRangePicker;
         this.container.classList.add(this.locale.direction);
 
         if (typeof options.startDate === 'string')
-            this.startDate = moment(options.startDate, this.locale.format);
+            this.startDate = td(options.startDate, this.locale.format);
 
         if (typeof options.endDate === 'string')
-            this.endDate = moment(options.endDate, this.locale.format);
+            this.endDate = td(options.endDate, this.locale.format);
 
         if (typeof options.minDate === 'string')
-            this.minDate = moment(options.minDate, this.locale.format);
+            this.minDate = td(options.minDate, this.locale.format);
 
         if (typeof options.maxDate === 'string')
-            this.maxDate = moment(options.maxDate, this.locale.format);
+            this.maxDate = td(options.maxDate, this.locale.format);
 
         if (typeof options.startDate === 'object')
-            this.startDate = moment(options.startDate);
+            this.startDate = td(options.startDate);
 
         if (typeof options.endDate === 'object')
-            this.endDate = moment(options.endDate);
+            this.endDate = td(options.endDate);
 
         if (typeof options.minDate === 'object')
-            this.minDate = moment(options.minDate);
+            this.minDate = td(options.minDate);
 
         if (typeof options.maxDate === 'object')
-            this.maxDate = moment(options.maxDate);
+            this.maxDate = td(options.maxDate);
 
         // sanity check for bad options
         if (this.minDate && this.startDate.isBefore(this.minDate))
@@ -287,11 +705,11 @@ var DateRangePicker;
                 start = end = null;
 
                 if (split.length == 2) {
-                    start = moment(split[0], this.locale.format);
-                    end = moment(split[1], this.locale.format);
+                    start = td(split[0], this.locale.format);
+                    end = td(split[1], this.locale.format);
                 } else if (this.singleDatePicker && val !== "") {
-                    start = moment(val, this.locale.format);
-                    end = moment(val, this.locale.format);
+                    start = td(val, this.locale.format);
+                    end = td(val, this.locale.format);
                 }
                 if (start !== null && end !== null) {
                     this.setStartDate(start);
@@ -306,14 +724,14 @@ var DateRangePicker;
                 let range = rangesKeys[i];
 
                 if (typeof options.ranges[range][0] === 'string')
-                    start = moment(options.ranges[range][0], this.locale.format);
+                    start = td(options.ranges[range][0], this.locale.format);
                 else
-                    start = moment(options.ranges[range][0]);
+                    start = td(options.ranges[range][0]);
 
                 if (typeof options.ranges[range][1] === 'string')
-                    end = moment(options.ranges[range][1], this.locale.format);
+                    end = td(options.ranges[range][1], this.locale.format);
                 else
-                    end = moment(options.ranges[range][1]);
+                    end = td(options.ranges[range][1]);
 
                 // If the start or end date exceed those allowed by the minDate or maxSpan
                 // options, shorten the range to the allowable period.
@@ -455,10 +873,10 @@ var DateRangePicker;
 
         setStartDate: function(startDate) {
             if (typeof startDate === 'string')
-                this.startDate = moment(startDate, this.locale.format);
+                this.startDate = td(startDate, this.locale.format);
 
             if (typeof startDate === 'object')
-                this.startDate = moment(startDate);
+                this.startDate = td(startDate);
 
             if (!this.timePicker)
                 this.startDate = this.startDate.startOf('day');
@@ -486,10 +904,10 @@ var DateRangePicker;
 
         setEndDate: function(endDate) {
             if (typeof endDate === 'string')
-                this.endDate = moment(endDate, this.locale.format);
+                this.endDate = td(endDate, this.locale.format);
 
             if (typeof endDate === 'object')
-                this.endDate = moment(endDate);
+                this.endDate = td(endDate);
 
             if (!this.timePicker)
                 this.endDate = this.endDate.endOf('day');
@@ -696,12 +1114,12 @@ var DateRangePicker;
             var hour = calendar.month.hour();
             var minute = calendar.month.minute();
             var second = calendar.month.second();
-            var daysInMonth = moment([year, month]).daysInMonth();
-            var firstDay = moment([year, month, 1]);
-            var lastDay = moment([year, month, daysInMonth]);
-            var lastMonth = moment(firstDay).subtract(1, 'month').month();
-            var lastYear = moment(firstDay).subtract(1, 'month').year();
-            var daysInLastMonth = moment([lastYear, lastMonth]).daysInMonth();
+            var daysInMonth = td([year, month]).daysInMonth();
+            var firstDay = td([year, month, 1]);
+            var lastDay = td([year, month, daysInMonth]);
+            var lastMonth = td(firstDay).subtract(1, 'month').month();
+            var lastYear = td(firstDay).subtract(1, 'month').year();
+            var daysInLastMonth = td([lastYear, lastMonth]).daysInMonth();
             var dayOfWeek = firstDay.day();
 
             //initialize a 6 rows x 7 columns array for the calendar
@@ -721,10 +1139,10 @@ var DateRangePicker;
             if (dayOfWeek == this.locale.firstDay)
                 startDay = daysInLastMonth - 6;
 
-            var curDate = moment([lastYear, lastMonth, startDay, 12, minute, second]);
+            var curDate = td([lastYear, lastMonth, startDay, 12, minute, second]);
 
             var col, row;
-            for (var i = 0, col = 0, row = 0; i < 42; i++, col++, curDate = moment(curDate).add(24, 'hour')) {
+            for (var i = 0, col = 0, row = 0; i < 42; i++, col++, curDate = td(curDate).add(24, 'hour')) {
                 if (i > 0 && col % 7 === 0) {
                     col = 0;
                     row++;
@@ -1488,7 +1906,7 @@ var DateRangePicker;
                 leftOrRight = isLeft ? 'left' : 'right',
                 cal = this.container.querySelector('.drp-calendar.'+leftOrRight);
 
-            // Month must be Number for new moment versions
+            // Month must be a Number
             var month = parseInt(cal.querySelector('.monthselect').value, 10);
             var year = cal.querySelector('.yearselect').value;
 
@@ -1588,12 +2006,12 @@ var DateRangePicker;
                 end = null;
 
             if (dateString.length === 2) {
-                start = moment(dateString[0], this.locale.format);
-                end = moment(dateString[1], this.locale.format);
+                start = td(dateString[0], this.locale.format);
+                end = td(dateString[1], this.locale.format);
             }
 
             if (this.singleDatePicker || start === null || end === null) {
-                start = moment(this.element.value, this.locale.format);
+                start = td(this.element.value, this.locale.format);
                 end = start;
             }
 
@@ -1721,14 +2139,14 @@ var DateRangePicker;
                     let range = rangesKeys[i];
     
                     if (typeof newRanges[range][0] === 'string')
-                        start = moment(newRanges[range][0], this.locale.format);
+                        start = td(newRanges[range][0], this.locale.format);
                     else
-                        start = moment(newRanges[range][0]);
+                        start = td(newRanges[range][0]);
     
                     if (typeof newRanges[range][1] === 'string')
-                        end = moment(newRanges[range][1], this.locale.format);
+                        end = td(newRanges[range][1], this.locale.format);
                     else
-                        end = moment(newRanges[range][1]);
+                        end = td(newRanges[range][1]);
     
                     // If the start or end date exceed those allowed by the minDate or maxSpan
                     // options, shorten the range to the allowable period.

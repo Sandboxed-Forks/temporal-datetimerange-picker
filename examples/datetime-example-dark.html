@@ -3,8 +3,8 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-        <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/gh/alumuko/vanilla-datetimerange-picker@latest/extra/vanilla-datetimerange-picker-dark.css">
-        <title>vanilla-datetimerange-picker simple example.</title>
+        <link type="text/css" rel="stylesheet" href="../extra/temporal-datetimerange-picker-dark.css">
+        <title>temporal-datetimerange-picker simple example.</title>
         <style>
             body {
                 color: white;
@@ -14,10 +14,18 @@
     </head>
     <body>
         <div><input type="text" id="datetimerange-input1" size="40" style="text-align:center"></div>
-        <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js" type="text/javascript"></script>
-        <script src="https://cdn.jsdelivr.net/gh/alumuko/vanilla-datetimerange-picker@latest/dist/vanilla-datetimerange-picker.js"></script>
+        <!-- Temporal ships natively in modern browsers (Firefox 139+, Chrome 144+). This polyfill
+             is only needed as a fallback for browsers without native support yet (e.g. Safari). -->
+        <script src="https://cdn.jsdelivr.net/npm/@js-temporal/polyfill/dist/index.umd.js" type="text/javascript"></script>
+        <script src="../dist/temporal-datetimerange-picker.js"></script>
         <script>
+            var Temporal = window.Temporal || window.temporal.Temporal;
+
+            function startOfDay(t) { return t.with({ hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 }); }
+            function endOfDay(t) { return t.with({ hour: 23, minute: 59, second: 59, millisecond: 999, microsecond: 999, nanosecond: 999 }); }
+
             window.addEventListener("load", function (event) {
+                var now = Temporal.Now.plainDateTimeISO();
                 let drp = new DateRangePicker('datetimerange-input1',
                     {
                         //startDate: '2000-01-01',
@@ -49,10 +57,10 @@
                         //},
                         //autoUpdateInput: false,
                         ranges: {
-                            'Today': [moment().startOf('day'), moment().endOf('day')],
-                            'Yesterday': [moment().subtract(1, 'days').startOf('day'), moment().subtract(1, 'days').endOf('day')],
-                            'Last 7 Days': [moment().subtract(6, 'days').startOf('day'), moment().endOf('day')],
-                            'This Month': [moment().startOf('month').startOf('day'), moment().endOf('month').endOf('day')],
+                            'Today': [startOfDay(now), endOfDay(now)],
+                            'Yesterday': [startOfDay(now.subtract({ days: 1 })), endOfDay(now.subtract({ days: 1 }))],
+                            'Last 7 Days': [startOfDay(now.subtract({ days: 6 })), endOfDay(now)],
+                            'This Month': [startOfDay(now.with({ day: 1 })), endOfDay(now.with({ day: now.daysInMonth }))],
                         },
                         locale: {
                             format: "YYYY-MM-DD HH:mm:ss",
