@@ -1,10 +1,11 @@
 # temporal-datetimerange-picker
 
 ## Overview.
-A JavaScript component that is a date &amp; time range picker, no need to build, no dependencies except the [Temporal API](https://tc39.es/proposal-temporal/docs/), that is inspired by [Dan Grossman's bootstrap-daterangepicker](https://github.com/dangrossman/daterangepicker).
+A JavaScript component that is a date &amp; time range picker. No build step and no dependencies except the [Temporal API](https://tc39.es/proposal-temporal/docs/). Inspired by [Dan Grossman's bootstrap-daterangepicker](https://github.com/dangrossman/daterangepicker).
 
-Actually, this program is base on Dan Grossman's bootstrap-daterangepicker (version 3.1).
-I just changed the code a bit to not need jquery.
+> *See [Credits](#credits)*
+
+This version is a fork of [Alumuko's](https://github.com/alumuko) adaptation of Dan Grossman's bootstrap-daterangepicker (version 3.1). Alumuko "just changed the code a bit to not need jquery."
 
 For more detailed, beginner-friendly installation and usage guides (including Astro/Astro
 Starlight), see the [`docs/`](docs/README.md) folder.
