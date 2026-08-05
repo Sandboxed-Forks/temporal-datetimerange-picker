@@ -43,7 +43,14 @@ That's it — no `npm install`, no build tool, no package manager. Once these th
 A couple of notes:
 
 - The polyfill script is always safe to include, even on browsers that already have Temporal natively — the picker detects native support first and only uses the polyfill's copy if it needs to.
-- `@latest` always points at the newest version, which means your site picks up updates automatically (and could change unexpectedly if you'd rather it didn't). See jsDelivr's own docs on [versioning GitHub-sourced files](https://www.jsdelivr.com/documentation#id-github) if you'd rather pin to a specific version.
+- `@latest` always points at the newest version, which means your site picks up updates automatically (and could change unexpectedly if you'd rather it didn't). To pin to a known version instead, replace `@latest` with a tag from the [Releases page](https://github.com/Sandboxed-Forks/temporal-datetimerange-picker/releases), e.g. `@v1.0.0`:
+
+  ```html
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Sandboxed-Forks/temporal-datetimerange-picker@v1.0.0/dist/temporal-datetimerange-picker.css">
+  <script src="https://cdn.jsdelivr.net/gh/Sandboxed-Forks/temporal-datetimerange-picker@v1.0.0/dist/temporal-datetimerange-picker.js"></script>
+  ```
+
+  A version-pinned URL never changes underneath you (jsDelivr caches it essentially forever), so this is the safer choice for production sites — you upgrade on your own schedule by bumping the tag yourself. See jsDelivr's docs on [versioning GitHub-sourced files](https://www.jsdelivr.com/documentation#id-github) for more.
 - Want the dark theme instead? Swap the `.css` link for `.../extra/temporal-datetimerange-picker-dark.css` — see the [main README](../README.md#a-dark-version-css).
 
 ## Option 2: Download the files
