@@ -6,6 +6,9 @@ A JavaScript component that is a date &amp; time range picker, no need to build,
 Actually, this program is base on Dan Grossman's bootstrap-daterangepicker (version 3.1).
 I just changed the code a bit to not need jquery.
 
+For more detailed, beginner-friendly installation and usage guides (including Astro/Astro
+Starlight), see the [`docs/`](docs/README.md) folder.
+
 
 ## Requirements
 - [Temporal](https://tc39.es/proposal-temporal/docs/) ships natively in modern browsers (Firefox 139+, Chrome 144+, Edge 144+). For browsers without native support yet (e.g. Safari), include the official [`@js-temporal/polyfill`](https://github.com/js-temporal/temporal-polyfill) before this library's script tag.
