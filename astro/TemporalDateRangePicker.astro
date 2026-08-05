@@ -1,23 +1,37 @@
 ---
-// TemporalDateRangePicker.astro
-//
-// An Astro wrapper around the <temporal-date-range-picker> custom element
-// (see ../dist/temporal-datetimerange-picker.js). Renders to plain static
-// HTML - correct for Astro's default SSG output, and for Astro Starlight
-// pages/components. The custom element itself does all the work client-side
-// once its script loads; there's no framework hydration involved here.
-//
-// Provide your own <input> (or <button>) via the "input" slot to have the
-// picker adopt it instead of creating its own - this mirrors the custom
-// element's own :scope > input/button lookup, since Astro slots compile to
-// literal static HTML: whatever you pass into the "input" slot ends up as a
-// direct child of <temporal-date-range-picker> in the rendered page, exactly
-// where the custom element looks for it.
-//
-//   <TemporalDateRangePicker timePicker opens="left">
-//     <input type="text" placeholder="Pick a range…" slot="input" />
-//   </TemporalDateRangePicker>
-
+/**
+ * TemporalDateRangePicker
+ *
+ * An Astro wrapper around the `<temporal-date-range-picker>` custom element.
+ * Renders to plain static HTML - correct for Astro's default SSG output, and
+ * for Astro Starlight pages/components. The custom element itself does all
+ * the work client-side once its script loads; there's no framework hydration
+ * involved here.
+ *
+ * Props are camelCase versions of the custom element's attributes/properties
+ * (see the field-level docs below for each one's default and behavior).
+ *
+ * @example Basic usage - the component creates its own `<input>`
+ * ```astro
+ * <TemporalDateRangePicker timePicker opens="left" showWeekNumbers />
+ * ```
+ *
+ * @example Providing your own input/button via the `input` slot
+ * ```astro
+ * <TemporalDateRangePicker>
+ *   <input type="text" placeholder="Pick a range…" slot="input" />
+ * </TemporalDateRangePicker>
+ * ```
+ *
+ * @slot input - Optional `<input>` or `<button>` for the picker to adopt instead of
+ * creating its own. Astro slots compile to literal static HTML, so whatever is
+ * passed here ends up as a direct child of `<temporal-date-range-picker>` in the
+ * rendered page - exactly where the custom element's own `:scope > input, :scope >
+ * button` lookup expects it.
+ *
+ * @see ../dist/temporal-datetimerange-picker.js - the underlying custom element
+ * @see ../README.md#astro - full documentation
+ */
 export interface Props {
 	/** The beginning date of the initially selected range (must match `format`). */
 	startDate?: string;
