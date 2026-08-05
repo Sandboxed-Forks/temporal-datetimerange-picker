@@ -9,6 +9,10 @@ I just changed the code a bit to not need jquery.
 
 ## Requirements
 - [Temporal](https://tc39.es/proposal-temporal/docs/) ships natively in modern browsers (Firefox 139+, Chrome 144+, Edge 144+). For browsers without native support yet (e.g. Safari), include the official [`@js-temporal/polyfill`](https://github.com/js-temporal/temporal-polyfill) before this library's script tag.
+
+### Behavior without Temporal
+If neither native Temporal nor the polyfill is present when a `DateRangePicker` is constructed, it does not throw or break the page. Instead, it disables the bound `<input>` and sets its value to `"Requires Temporal"`, leaving the rest of the page working normally. Calling `setStartDate`, `setEndDate`, `show`, or `updateRanges` on an instance in this state is a safe no-op. See [missing-temporal-example.html](examples/missing-temporal-example.html) for a live demo of this fallback.
+
 ### IE11
 If you want to use on Internet Explorer 11, include [Polyfill](https://polyfill.io/v3/polyfill.js?ua=ie/11) to use CustomEvent, Object.assign, Element.prototype.closest and Element.prototype.matches features.
 

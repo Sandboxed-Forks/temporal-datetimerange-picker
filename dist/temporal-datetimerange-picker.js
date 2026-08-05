@@ -28,13 +28,9 @@ var DateRangePicker;
                 ? window.temporal.Temporal
                 : undefined;
 
-    if (!TemporalNS) {
-        throw new Error(
-            'DateRangePicker requires the Temporal API. Your browser doesn\'t ' +
-            'support it natively yet - include the official polyfill before ' +
-            'this script: https://github.com/js-temporal/temporal-polyfill'
-        );
-    }
+    // TemporalNS is left undefined rather than thrown here, so this script always loads and
+    // defines DateRangePicker. Each DateRangePicker instance checks TemporalNS for itself and
+    // degrades its bound input (disabled, "Requires Temporal") instead of crashing the page.
 
     // ------------------------------------------------------------------
     // TDateTime: a small Moment.js-compatible wrapper around a single
@@ -438,6 +434,17 @@ var DateRangePicker;
             this.element = document.getElementById(element);
         else
             this.element = element;
+
+        // No Temporal (native or polyfilled) available: disable the bound input instead of
+        // building a picker that has no date engine to work with.
+        if (!TemporalNS) {
+            if (this.element) {
+                this.element.disabled = true;
+                this.element.value = 'Requires Temporal';
+            }
+            return;
+        }
+
         this.startDate = td().startOf('day');
         this.endDate = td().endOf('day');
         this.minDate = false;
@@ -872,6 +879,8 @@ var DateRangePicker;
         constructor: DateRangePicker,
 
         setStartDate: function(startDate) {
+            if (!TemporalNS) return;
+
             if (typeof startDate === 'string')
                 this.startDate = td(startDate, this.locale.format);
 
@@ -903,6 +912,8 @@ var DateRangePicker;
         },
 
         setEndDate: function(endDate) {
+            if (!TemporalNS) return;
+
             if (typeof endDate === 'string')
                 this.endDate = td(endDate, this.locale.format);
 
@@ -1591,7 +1602,7 @@ var DateRangePicker;
         },
 
         show: function(e) {
-            if (this.isShowing) return;
+            if (!TemporalNS || this.isShowing) return;
 
             // Create a click proxy that is private to this instance of datepicker, for unbinding
             if(!this._outsideClickProxy)
@@ -2131,6 +2142,8 @@ var DateRangePicker;
         },
 
         updateRanges: function(newRanges){
+            if (!TemporalNS) return;
+
             if (typeof newRanges === 'object') {
                 jq.off(this.container.querySelector('.ranges'), 'click', 'li', this.clickRangeProxy);
                 this.ranges = [];

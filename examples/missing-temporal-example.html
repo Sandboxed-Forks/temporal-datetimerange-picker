@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <link type="text/css" rel="stylesheet" href="../dist/temporal-datetimerange-picker.css">
+        <title>temporal-datetimerange-picker missing-Temporal example.</title>
+        <style>
+            body {
+                font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+                max-width: 700px;
+                margin: 2rem auto;
+                padding: 0 1rem;
+                color: #222;
+            }
+            h1 {
+                font-size: 1.5rem;
+                margin-bottom: 0.25rem;
+            }
+            p.intro {
+                color: #555;
+            }
+            .notice {
+                margin: 1rem 0;
+                padding: 0.75rem 1rem;
+                border-radius: 6px;
+                font-size: 0.9rem;
+                border: 1px solid transparent;
+            }
+            .notice-yes {
+                background: #e6f6ec;
+                border-color: #b7e4c7;
+                color: #1e6b3c;
+            }
+            .notice-no {
+                background: #fdecea;
+                border-color: #f5c2c0;
+                color: #a3231c;
+            }
+            .card {
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                padding: 1rem;
+                background: #fafafa;
+                margin-top: 1.5rem;
+            }
+            .card h2 {
+                font-size: 1rem;
+                margin: 0 0 0.35rem 0;
+            }
+            .card p.desc {
+                font-size: 0.85rem;
+                color: #555;
+            }
+            .card input[type="text"] {
+                width: 100%;
+                box-sizing: border-box;
+                padding: 0.4rem;
+                text-align: center;
+            }
+            code {
+                background: #eee;
+                padding: 0.1rem 0.3rem;
+                border-radius: 3px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>temporal-datetimerange-picker &mdash; missing-Temporal example</h1>
+        <p class="intro">
+            This page deliberately does <strong>not</strong> load the <code>@js-temporal/polyfill</code> script, and it
+            actively strips <code>window.Temporal</code> before the picker library runs &mdash; regardless of what your
+            browser actually supports &mdash; so it always demonstrates the picker's fallback behavior.
+        </p>
+
+        <div class="notice" id="native-support-notice">Checking for native Temporal support&hellip;</div>
+
+        <div class="card">
+            <h2>Simulated: no Temporal available</h2>
+            <p class="desc">
+                No polyfill loaded, and <code>window.Temporal</code> removed before <code>temporal-datetimerange-picker.js</code>
+                runs. Instead of throwing or building a broken calendar, the library disables this input and sets its
+                value to <code>"Requires Temporal"</code>.
+            </p>
+            <input type="text" id="dtr-missing-temporal" size="30">
+        </div>
+
+        <script>
+            // (a) Record whether this browser actually has native Temporal support, before we touch anything.
+            var nativeTemporalAvailable = (typeof window.Temporal !== 'undefined');
+            var noticeEl = document.getElementById('native-support-notice');
+            noticeEl.textContent = 'Native Temporal support in this browser: ' + (nativeTemporalAvailable ? 'Yes' : 'No');
+            noticeEl.className = 'notice ' + (nativeTemporalAvailable ? 'notice-yes' : 'notice-no');
+
+            // (b) Simulate the absence of Temporal - even on browsers that do support it natively -
+            // by removing it before the picker library script (below) ever runs. No polyfill is
+            // loaded on this page either, so the library has nothing to fall back to.
+            delete window.Temporal;
+            delete window.temporal;
+        </script>
+
+        <!-- Deliberately NOT including the Temporal polyfill here. -->
+        <script src="../dist/temporal-datetimerange-picker.js"></script>
+        <script>
+            window.addEventListener('load', function () {
+                new DateRangePicker('dtr-missing-temporal');
+            });
+        </script>
+    </body>
+</html>
