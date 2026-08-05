@@ -62,6 +62,37 @@ anything the wrapper doesn't cover directly, and `.setStartDate()`/`.setEndDate(
 See [custom element example page](examples/custom-element-example.html) for attribute, property,
 and escape-hatch usage.
 
+## Astro
+[astro/TemporalDateRangePicker.astro](astro/TemporalDateRangePicker.astro) is a typed Astro
+component that wraps `<temporal-date-range-picker>` for use in Astro or Astro Starlight projects
+(copy the file into your project's `src/components/`; it's not published as an npm package). It
+renders to plain static HTML, which is all this needs &mdash; the custom element does its work
+client-side once its script loads, there's no framework hydration involved.
+
+```astro
+---
+import TemporalDateRangePicker from '../components/TemporalDateRangePicker.astro';
+---
+<TemporalDateRangePicker timePicker opens="left" showWeekNumbers />
+```
+
+Props are camelCase versions of the custom element's options (`timePicker24Hour`, `singleDatePicker`,
+`minDate`, `format`, `separator`, `applyLabel`, `cancelLabel`, etc.) and get translated to the
+element's kebab-case attributes. Provide your own `<input>` (or `<button>`) via the `input` slot to
+have the picker adopt it instead of creating its own:
+
+```astro
+<TemporalDateRangePicker>
+  <input type="text" placeholder="Pick a range…" slot="input" />
+</TemporalDateRangePicker>
+```
+
+By default each instance renders its own `<link>`/`<script>` tags (pointing at the jsDelivr CDN
+build, overridable via the `scriptSrc`/`styleHref`/`polyfillSrc` props). If a page uses the
+component many times, load those once in your layout's `<head>` instead and pass
+`includeAssets={false}` on each instance to skip repeating them (registering the custom element
+twice is harmless either way, since the library only calls `customElements.define(...)` once).
+
 ## Usage
 ```
 new DateRangePicker(bindElement, options, callback);

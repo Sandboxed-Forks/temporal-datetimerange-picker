@@ -2418,7 +2418,9 @@ var DateRangePicker;
                     this._input.name = this.getAttribute('name');
                 if (this.hasAttribute('size'))
                     this._input.size = this.getAttribute('size');
-                if (this.hasAttribute('disabled'))
+                // Value-checked (not presence-only) so frameworks that render boolean props as
+                // e.g. disabled="false" (Astro does) don't end up disabling the input by accident.
+                if (this.hasAttribute('disabled') && this.getAttribute('disabled') !== 'false')
                     this._input.disabled = true;
 
                 this._picker = new DateRangePicker(this._input, this._buildOptions(), this._callback);

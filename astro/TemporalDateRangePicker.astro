@@ -1,0 +1,200 @@
+---
+// TemporalDateRangePicker.astro
+//
+// An Astro wrapper around the <temporal-date-range-picker> custom element
+// (see ../dist/temporal-datetimerange-picker.js). Renders to plain static
+// HTML - correct for Astro's default SSG output, and for Astro Starlight
+// pages/components. The custom element itself does all the work client-side
+// once its script loads; there's no framework hydration involved here.
+//
+// Provide your own <input> (or <button>) via the "input" slot to have the
+// picker adopt it instead of creating its own - this mirrors the custom
+// element's own :scope > input/button lookup, since Astro slots compile to
+// literal static HTML: whatever you pass into the "input" slot ends up as a
+// direct child of <temporal-date-range-picker> in the rendered page, exactly
+// where the custom element looks for it.
+//
+//   <TemporalDateRangePicker timePicker opens="left">
+//     <input type="text" placeholder="Pick a range…" slot="input" />
+//   </TemporalDateRangePicker>
+
+export interface Props {
+	/** The beginning date of the initially selected range (must match `format`). */
+	startDate?: string;
+	/** The end date of the initially selected range (must match `format`). */
+	endDate?: string;
+	/** The earliest date a user may select (must match `format`). */
+	minDate?: string;
+	/** The latest date a user may select (must match `format`). */
+	maxDate?: string;
+	/** Which side the picker opens from. Default: 'right'. */
+	opens?: 'left' | 'right' | 'center';
+	/** Whether the picker drops down or up. Default: 'down'. */
+	drops?: 'down' | 'up' | 'auto';
+
+	/** Adds select boxes to choose times in addition to dates. Default: false. */
+	timePicker?: boolean;
+	/** Use 24-hour instead of 12-hour times. Default: false. */
+	timePicker24Hour?: boolean;
+	/** Show seconds in the time picker. Default: false. */
+	timePickerSeconds?: boolean;
+	/** Increment of the minutes selection list. */
+	timePickerIncrement?: number;
+	/** Show only a single calendar to choose one date. Default: false. */
+	singleDatePicker?: boolean;
+	/** Show year/month select boxes above the calendars. Default: false. */
+	showDropdowns?: boolean;
+	/** Minimum year shown in the dropdowns (when showDropdowns is true). */
+	minYear?: number;
+	/** Maximum year shown in the dropdowns (when showDropdowns is true). */
+	maxYear?: number;
+	/** Show localized week numbers. Default: false. */
+	showWeekNumbers?: boolean;
+	/** Show ISO-8601 week numbers. Default: false. */
+	showISOWeekNumbers?: boolean;
+	/** Always show the calendars alongside predefined ranges. Default: false. */
+	alwaysShowCalendars?: boolean;
+	/** Apply a new range as soon as two dates are clicked, hiding the buttons. Default: false. */
+	autoApply?: boolean;
+
+	/** Displays "Custom Range" at the end of the ranges list. Default: true - pass `false` to opt out. */
+	showCustomRangeLabel?: boolean;
+	/** Keep the two calendars on sequential months. Default: true - pass `false` to opt out. */
+	linkedCalendars?: boolean;
+	/** Auto-update the bound input's value on init/selection. Default: true - pass `false` to opt out. */
+	autoUpdateInput?: boolean;
+
+	/** Date/time format string, e.g. "YYYY-MM-DD HH:mm:ss". Default: "MM/DD/YYYY". */
+	format?: string;
+	/** Separator between the two formatted dates. Default: " - ". */
+	separator?: string;
+	/** Apply button label. Default: "Apply". */
+	applyLabel?: string;
+	/** Cancel button label. Default: "Cancel". */
+	cancelLabel?: string;
+
+	/** Placeholder for the auto-created input. Ignored if you provide your own via the "input" slot. */
+	placeholder?: string;
+	/** Name for the auto-created input. Ignored if you provide your own via the "input" slot. */
+	name?: string;
+	/** Size for the auto-created input. Ignored if you provide your own via the "input" slot. */
+	size?: number;
+	/** Disables the (auto-created or slotted) input. */
+	disabled?: boolean;
+
+	/** id/class applied to the <temporal-date-range-picker> element itself. */
+	id?: string;
+	class?: string;
+
+	/**
+	 * Whether this component renders the library's <script>/<link> tags itself.
+	 * Default: true. Set to false if you've already loaded them once in your
+	 * layout's <head> (e.g. a Starlight `head` config) - handy when a page uses
+	 * this component many times, to avoid repeating the tags per instance.
+	 */
+	includeAssets?: boolean;
+	/** Whether to also load the Temporal polyfill (for browsers without native Temporal, e.g. Safari). Default: true. */
+	includePolyfill?: boolean;
+	/** URL for the picker's JS. Defaults to the jsDelivr CDN build. */
+	scriptSrc?: string;
+	/** URL for the picker's CSS. Defaults to the jsDelivr CDN build. */
+	styleHref?: string;
+	/** URL for the Temporal polyfill's JS. Defaults to the jsDelivr CDN build. */
+	polyfillSrc?: string;
+}
+
+const {
+	startDate,
+	endDate,
+	minDate,
+	maxDate,
+	opens,
+	drops,
+
+	timePicker,
+	timePicker24Hour,
+	timePickerSeconds,
+	timePickerIncrement,
+	singleDatePicker,
+	showDropdowns,
+	minYear,
+	maxYear,
+	showWeekNumbers,
+	showISOWeekNumbers,
+	alwaysShowCalendars,
+	autoApply,
+
+	showCustomRangeLabel,
+	linkedCalendars,
+	autoUpdateInput,
+
+	format,
+	separator,
+	applyLabel,
+	cancelLabel,
+
+	placeholder,
+	name,
+	size,
+	disabled,
+
+	id,
+	class: className,
+
+	includeAssets = true,
+	includePolyfill = true,
+	scriptSrc = 'https://cdn.jsdelivr.net/gh/Sandboxed-Forks/temporal-datetimerange-picker@latest/dist/temporal-datetimerange-picker.js',
+	styleHref = 'https://cdn.jsdelivr.net/gh/Sandboxed-Forks/temporal-datetimerange-picker@latest/dist/temporal-datetimerange-picker.css',
+	polyfillSrc = 'https://cdn.jsdelivr.net/npm/@js-temporal/polyfill/dist/index.umd.js',
+} = Astro.props;
+
+// showCustomRangeLabel/linkedCalendars/autoUpdateInput default to true in the underlying picker,
+// so an explicit opt-out needs the literal string "false" - omitting the attribute isn't enough.
+const showCustomRangeLabelAttr = showCustomRangeLabel === false ? 'false' : undefined;
+const linkedCalendarsAttr = linkedCalendars === false ? 'false' : undefined;
+const autoUpdateInputAttr = autoUpdateInput === false ? 'false' : undefined;
+---
+
+{includeAssets && (
+	<>
+		<link rel="stylesheet" href={styleHref} />
+		{includePolyfill && <script is:inline src={polyfillSrc} />}
+		<script is:inline src={scriptSrc} />
+	</>
+)}
+
+<temporal-date-range-picker
+	id={id}
+	class={className}
+	start-date={startDate}
+	end-date={endDate}
+	min-date={minDate}
+	max-date={maxDate}
+	opens={opens}
+	drops={drops}
+	time-picker={timePicker}
+	time-picker-24-hour={timePicker24Hour}
+	time-picker-seconds={timePickerSeconds}
+	time-picker-increment={timePickerIncrement}
+	single-date-picker={singleDatePicker}
+	show-dropdowns={showDropdowns}
+	min-year={minYear}
+	max-year={maxYear}
+	show-week-numbers={showWeekNumbers}
+	show-iso-week-numbers={showISOWeekNumbers}
+	always-show-calendars={alwaysShowCalendars}
+	auto-apply={autoApply}
+	show-custom-range-label={showCustomRangeLabelAttr}
+	linked-calendars={linkedCalendarsAttr}
+	auto-update-input={autoUpdateInputAttr}
+	format={format}
+	separator={separator}
+	apply-label={applyLabel}
+	cancel-label={cancelLabel}
+	placeholder={placeholder}
+	name={name}
+	size={size}
+	disabled={disabled}
+>
+	<slot name="input" />
+</temporal-date-range-picker>
