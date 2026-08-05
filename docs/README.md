@@ -8,4 +8,6 @@ More detailed installation and usage guides than the [main README](../README.md)
 
 New here? Read [Installation](install.md) first, then jump to whichever usage guide matches what you're building.
 
+Looking for a specific version's files, or want to know when a new one comes out? See this repo's [GitHub Releases](https://github.com/Sandboxed-Forks/temporal-datetimerange-picker/releases) — each release has the key files attached individually, plus a [`CHANGELOG.md`](../CHANGELOG.md) entry describing what changed.
+
 This `docs/` folder is intentionally small for now — more guides may be added here as the project grows.

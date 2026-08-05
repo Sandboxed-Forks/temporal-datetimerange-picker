@@ -50,12 +50,12 @@ A couple of notes:
 
 If you'd rather not depend on an external CDN at runtime (your site needs to work offline, behind a corporate firewall, or you just prefer to control every file your site serves), download the files yourself and host them as part of your own site.
 
-1. Get the files from this repository:
-   - [`dist/temporal-datetimerange-picker.js`](../dist/temporal-datetimerange-picker.js)
-   - [`dist/temporal-datetimerange-picker.css`](../dist/temporal-datetimerange-picker.css)
-   - Optional dark theme: [`extra/temporal-datetimerange-picker-dark.css`](../extra/temporal-datetimerange-picker-dark.css)
+1. Get the files. There are two ways to do this:
 
-   The simplest way to grab a single file from GitHub is to open it, click the "Raw" button, then use your browser's Save Page As (or right-click and Save Link As). You can also clone the whole repository if you'd rather have everything at once.
+   - **From a [GitHub Release](https://github.com/Sandboxed-Forks/temporal-datetimerange-picker/releases) (recommended).** Each release has the key files attached as individual downloads — `temporal-datetimerange-picker.js`, `temporal-datetimerange-picker.css`, and the Astro component (see below) — pinned to that exact version. This is also the best way to *know about* new versions: watch the repository (GitHub's "Watch" button, with "Releases only" if you don't want every discussion/issue) or just check the Releases page occasionally. Each release also has a matching entry in [`CHANGELOG.md`](../CHANGELOG.md) describing what changed.
+   - **Straight from the repository.** Open [`dist/temporal-datetimerange-picker.js`](../dist/temporal-datetimerange-picker.js) or [`dist/temporal-datetimerange-picker.css`](../dist/temporal-datetimerange-picker.css) on GitHub, click the "Raw" button, then use your browser's Save Page As (or right-click and Save Link As). Optional dark theme: [`extra/temporal-datetimerange-picker-dark.css`](../extra/temporal-datetimerange-picker-dark.css). Unlike a release, these links always reflect whatever is currently on the default branch — handy if you specifically want the latest in-progress code, but not pinned to a known-working version the way a release is.
+
+   Either way, you can also clone the whole repository if you'd rather have everything at once.
 
 2. Also download the Temporal polyfill, if you need it (see "What you need" above) — save a copy of `https://cdn.jsdelivr.net/npm/@js-temporal/polyfill/dist/index.umd.js`.
 
@@ -81,7 +81,7 @@ If you'd rather not depend on an external CDN at runtime (your site needs to wor
 
 Everything else works exactly the same as the CDN option — continue to [JavaScript usage](usage-js.md).
 
-> **Keeping up to date:** since these are just static files you copied, they won't update themselves. If a new version of this library is released, you'll need to re-download the file(s) to get the changes. The CDN option (`@latest`) updates automatically instead — that's the main tradeoff between the two approaches.
+> **Keeping up to date:** since these are just static files you copied, they won't update themselves. Watch this repository's [Releases](https://github.com/Sandboxed-Forks/temporal-datetimerange-picker/releases) to find out when a new version is available, then re-download the file(s) to get the changes. The CDN option (`@latest`) updates automatically instead — that's the main tradeoff between the two approaches.
 
 ---
 
@@ -89,7 +89,7 @@ Everything else works exactly the same as the CDN option — continue to [JavaSc
 
 The Astro component is a bit different from the JS/CSS files: it's not something a browser loads directly, it's *source code* that the Astro build tool compiles for you. Because of that, there's no CDN option for it — you always copy the file into your project.
 
-1. Download [`astro/TemporalDateRangePicker.astro`](../astro/TemporalDateRangePicker.astro) from this repository (same "click Raw, Save As" approach as above).
+1. Download `TemporalDateRangePicker.astro` — either attached to a [GitHub Release](https://github.com/Sandboxed-Forks/temporal-datetimerange-picker/releases) (recommended, pinned to a version) or as [`astro/TemporalDateRangePicker.astro`](../astro/TemporalDateRangePicker.astro) straight from the repository (always the current default branch). See "Get the files" above for more on the difference.
 2. Place it in your Astro project's components folder — typically `src/components/`:
 
    ```
