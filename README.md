@@ -38,6 +38,30 @@ If you want to use on Internet Explorer 11, include [Polyfill](https://polyfill.
 ```
 
 See [simple example page](examples/datetime-example-simple.html).
+
+## Custom Element
+As a declarative alternative to `new DateRangePicker(...)`, this library also self-registers a
+`<temporal-date-range-picker>` custom element &mdash; a thin wrapper around the exact same
+`DateRangePicker` engine. Both can be used on the same page.
+
+```
+<temporal-date-range-picker time-picker opens="left" show-week-numbers></temporal-date-range-picker>
+```
+
+If no `<input>` or `<button>` child is provided, one is created automatically. Simple options are
+set as HTML attributes (kebab-case versions of the option names, e.g. `time-picker-24-hour`,
+`single-date-picker`, `min-date`, `format`, `separator`, `apply-label`, `cancel-label`); several
+options default to `true`, so boolean attributes use presence-to-enable / `="false"`-to-disable
+rather than plain HTML boolean-attribute semantics. Options that aren't simple strings/numbers/
+booleans &mdash; `ranges`, `maxSpan`, `locale`, `isInvalidDate`, `isCustomDate`, `parentEl`,
+`callback` &mdash; are set as JS properties instead, and work whether set before or after the
+element is added to the page. `.picker` exposes the underlying `DateRangePicker` instance for
+anything the wrapper doesn't cover directly, and `.setStartDate()`/`.setEndDate()`/
+`.updateRanges()` are also available directly on the element as convenience methods.
+
+See [custom element example page](examples/custom-element-example.html) for attribute, property,
+and escape-hatch usage.
+
 ## Usage
 ```
 new DateRangePicker(bindElement, options, callback);

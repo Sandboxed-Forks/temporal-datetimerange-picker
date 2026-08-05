@@ -2063,6 +2063,8 @@ var DateRangePicker;
 
         remove: function() {
 
+            if (!this.container) return; // degraded instance (Temporal unavailable) - nothing was built
+
             if (this._outsideClickProxy) {
                 // Bind global datepicker mousedown for hiding and
                 document.removeEventListener('mousedown', this._outsideClickProxy);
@@ -2137,6 +2139,7 @@ var DateRangePicker;
                 jq.off(drpCalendarElList, 'change', 'select.hourselect,select.minuteselect,select.secondselect,select.ampmselect', this.timeChangedProxy);
                 delete this.timeChangedProxy;
             }
+           this.container.remove();
            delete this.container;
            delete this.element.dataset;
         },
@@ -2195,8 +2198,10 @@ var DateRangePicker;
                 }
                 list += '</ul>';
                 let rangeNode = this.container.querySelector('.ranges');
-                rangeNode.removeChild(rangeNode.firstChild);
+                if (rangeNode.firstChild)
+                    rangeNode.removeChild(rangeNode.firstChild);
                 rangeNode.insertAdjacentHTML('afterbegin', list);
+                this.container.classList.add('show-ranges'); // in case this instance started with no ranges configured
             }
 
             this.clickRangeProxy = function (e) { this.clickRange(e); }.bind(this);
@@ -2317,4 +2322,207 @@ var DateRangePicker;
             }
         },
     };
+
+    // ------------------------------------------------------------------
+    // <temporal-date-range-picker>: a thin custom-element wrapper around
+    // DateRangePicker. It owns (or adopts) an internal <input>/<button>,
+    // translates attributes into the options object DateRangePicker
+    // already accepts, and forwards complex options through JS
+    // properties. No Shadow DOM - the popup still renders into
+    // document.body exactly like the classic API, reusing the same
+    // stylesheet unmodified. Both APIs can be used on the same page;
+    // registering this tag never touches the DateRangePicker constructor
+    // above.
+    //
+    // Attributes (read once, when the element connects - DateRangePicker
+    // has no live-reconfigure API for most options, so this element
+    // doesn't pretend to either):
+    //   start-date, end-date, min-date, max-date, opens, drops,
+    //   time-picker, time-picker-24-hour, time-picker-seconds,
+    //   time-picker-increment, single-date-picker, show-dropdowns,
+    //   min-year, max-year, show-week-numbers, show-iso-week-numbers,
+    //   show-custom-range-label, always-show-calendars, auto-apply,
+    //   linked-calendars, auto-update-input, format, separator,
+    //   apply-label, cancel-label, placeholder, name, size, disabled
+    //
+    // Boolean attributes: presence enables the option; an explicit
+    // value="false" disables it (several of these options default to
+    // true, so plain HTML boolean-attribute semantics aren't enough).
+    //
+    // JS-only properties: ranges, maxSpan, locale (overrides the
+    // format/separator/*-label attributes wholesale if set),
+    // isInvalidDate, isCustomDate, parentEl, callback. These work
+    // whether set before or after the element connects - `ranges` uses
+    // DateRangePicker's own live updateRanges(), and the rest rebuild
+    // the underlying instance if one already exists (elements already
+    // present in markup connect as soon as this script registers the
+    // tag, which is typically before any later <script> could set a
+    // property "before connecting"). `picker` exposes the underlying
+    // DateRangePicker instance for anything this thin wrapper doesn't
+    // cover directly.
+    // ------------------------------------------------------------------
+    if (typeof customElements !== 'undefined' && !customElements.get('temporal-date-range-picker')) {
+
+        var BOOLEAN_ATTR_MAP = {
+            'time-picker': 'timePicker',
+            'time-picker-24-hour': 'timePicker24Hour',
+            'time-picker-seconds': 'timePickerSeconds',
+            'single-date-picker': 'singleDatePicker',
+            'show-dropdowns': 'showDropdowns',
+            'show-week-numbers': 'showWeekNumbers',
+            'show-iso-week-numbers': 'showISOWeekNumbers',
+            'show-custom-range-label': 'showCustomRangeLabel',
+            'always-show-calendars': 'alwaysShowCalendars',
+            'auto-apply': 'autoApply',
+            'linked-calendars': 'linkedCalendars',
+            'auto-update-input': 'autoUpdateInput'
+        };
+
+        var NUMBER_ATTR_MAP = {
+            'time-picker-increment': 'timePickerIncrement',
+            'min-year': 'minYear',
+            'max-year': 'maxYear'
+        };
+
+        var STRING_ATTR_MAP = {
+            'start-date': 'startDate',
+            'end-date': 'endDate',
+            'min-date': 'minDate',
+            'max-date': 'maxDate',
+            'opens': 'opens',
+            'drops': 'drops'
+        };
+
+        var LOCALE_ATTR_MAP = {
+            'format': 'format',
+            'separator': 'separator',
+            'apply-label': 'applyLabel',
+            'cancel-label': 'cancelLabel'
+        };
+
+        class TemporalDateRangePickerElement extends HTMLElement {
+
+            connectedCallback() {
+                if (this._picker) return;
+
+                this._input = this.querySelector(':scope > input, :scope > button');
+                if (!this._input) {
+                    this._input = document.createElement('input');
+                    this._input.type = 'text';
+                    this.appendChild(this._input);
+                }
+
+                if (this.hasAttribute('placeholder'))
+                    this._input.placeholder = this.getAttribute('placeholder');
+                if (this.hasAttribute('name'))
+                    this._input.name = this.getAttribute('name');
+                if (this.hasAttribute('size'))
+                    this._input.size = this.getAttribute('size');
+                if (this.hasAttribute('disabled'))
+                    this._input.disabled = true;
+
+                this._picker = new DateRangePicker(this._input, this._buildOptions(), this._callback);
+            }
+
+            disconnectedCallback() {
+                if (this._picker) {
+                    this._picker.remove();
+                    this._picker = null;
+                }
+            }
+
+            _buildOptions() {
+                var opts = {};
+
+                for (var battr in BOOLEAN_ATTR_MAP)
+                    if (this.hasAttribute(battr))
+                        opts[BOOLEAN_ATTR_MAP[battr]] = this.getAttribute(battr) !== 'false';
+
+                for (var nattr in NUMBER_ATTR_MAP)
+                    if (this.hasAttribute(nattr))
+                        opts[NUMBER_ATTR_MAP[nattr]] = parseInt(this.getAttribute(nattr), 10);
+
+                for (var sattr in STRING_ATTR_MAP)
+                    if (this.hasAttribute(sattr))
+                        opts[STRING_ATTR_MAP[sattr]] = this.getAttribute(sattr);
+
+                var hasLocale = !!this._locale;
+                var locale = hasLocale ? this._locale : {};
+                if (!hasLocale) {
+                    for (var lattr in LOCALE_ATTR_MAP) {
+                        if (this.hasAttribute(lattr)) {
+                            locale[LOCALE_ATTR_MAP[lattr]] = this.getAttribute(lattr);
+                            hasLocale = true;
+                        }
+                    }
+                }
+                if (hasLocale) opts.locale = locale;
+
+                if (this._ranges) opts.ranges = this._ranges;
+                if (this._maxSpan) opts.maxSpan = this._maxSpan;
+                if (this._isInvalidDate) opts.isInvalidDate = this._isInvalidDate;
+                if (this._isCustomDate) opts.isCustomDate = this._isCustomDate;
+                if (this._parentEl) opts.parentEl = this._parentEl;
+
+                return opts;
+            }
+
+            // Escape hatch: the underlying DateRangePicker instance, for anything this
+            // thin wrapper doesn't expose directly.
+            get picker() {
+                return this._picker || null;
+            }
+
+            // Elements already present in markup upgrade (and connect) as soon as this
+            // script registers the tag - typically well before any later <script> gets a
+            // chance to set a property "before connecting". So instead of documenting a
+            // timing window that's unreliable in practice, these setters just rebuild the
+            // underlying DateRangePicker if one already exists, using DateRangePicker's own
+            // live updateRanges() where possible, and a full remove()+reconstruct otherwise.
+            _rebuild() {
+                if (!this._input) return; // not connected yet - _buildOptions() covers this at connect time
+                if (this._picker) this._picker.remove();
+                this._picker = new DateRangePicker(this._input, this._buildOptions(), this._callback);
+            }
+
+            get ranges() { return this._ranges; }
+            set ranges(value) {
+                this._ranges = value;
+                if (this._picker) this._picker.updateRanges(value);
+            }
+
+            get maxSpan() { return this._maxSpan; }
+            set maxSpan(value) { this._maxSpan = value; this._rebuild(); }
+
+            get locale() { return this._locale; }
+            set locale(value) { this._locale = value; this._rebuild(); }
+
+            get isInvalidDate() { return this._isInvalidDate; }
+            set isInvalidDate(value) { this._isInvalidDate = value; this._rebuild(); }
+
+            get isCustomDate() { return this._isCustomDate; }
+            set isCustomDate(value) { this._isCustomDate = value; this._rebuild(); }
+
+            get parentEl() { return this._parentEl; }
+            set parentEl(value) { this._parentEl = value; this._rebuild(); }
+
+            get callback() { return this._callback; }
+            set callback(value) { this._callback = value; this._rebuild(); }
+
+            setStartDate(date) {
+                if (this._picker) this._picker.setStartDate(date);
+            }
+
+            setEndDate(date) {
+                if (this._picker) this._picker.setEndDate(date);
+            }
+
+            updateRanges(newRanges) {
+                this._ranges = newRanges;
+                if (this._picker) this._picker.updateRanges(newRanges);
+            }
+        }
+
+        customElements.define('temporal-date-range-picker', TemporalDateRangePickerElement);
+    }
 })();

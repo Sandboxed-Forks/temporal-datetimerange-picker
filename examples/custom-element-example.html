@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <link type="text/css" rel="stylesheet" href="../dist/temporal-datetimerange-picker.css">
+        <title>temporal-datetimerange-picker custom element example.</title>
+        <style>
+            body {
+                font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+                max-width: 900px;
+                margin: 2rem auto;
+                padding: 0 1rem;
+                color: #222;
+            }
+            h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+            p.intro { color: #555; }
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 1rem;
+                margin-top: 1.5rem;
+            }
+            .card {
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                padding: 1rem;
+                background: #fafafa;
+            }
+            .card h2 { font-size: 1rem; margin: 0 0 0.35rem 0; }
+            .card p.desc { font-size: 0.85rem; color: #555; }
+            temporal-date-range-picker input {
+                width: 100%;
+                box-sizing: border-box;
+                padding: 0.4rem;
+                text-align: center;
+            }
+            .output { margin-top: 0.5rem; font-size: 0.8rem; color: #0a6; min-height: 1.2em; }
+            code { background: #eee; padding: 0.1rem 0.3rem; border-radius: 3px; }
+        </style>
+    </head>
+    <body>
+        <h1>temporal-datetimerange-picker &mdash; custom element example</h1>
+        <p class="intro">
+            The classic <code>new DateRangePicker(...)</code> constructor and the declarative
+            <code>&lt;temporal-date-range-picker&gt;</code> tag are the same engine underneath &mdash; this page only
+            uses the tag.
+        </p>
+
+        <div class="grid">
+
+            <div class="card">
+                <h2>1. Attribute-only configuration</h2>
+                <p class="desc">Everything set via HTML attributes: <code>time-picker</code>, <code>opens="left"</code>, <code>show-week-numbers</code>.</p>
+                <temporal-date-range-picker id="dtr-attrs" time-picker opens="left" show-week-numbers></temporal-date-range-picker>
+                <div class="output" id="dtr-attrs-output"></div>
+                <div>
+<pre><code>&lt;temporal-date-range-picker
+    id="dtr-attrs"
+    time-picker opens="left"
+    show-week-numbers&gt;
+&lt;/temporal-date-range-picker&gt;</code></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>2. Opting out of a default-true option</h2>
+                <p class="desc"><code>linked-calendars="false"</code> and <code>auto-update-input="false"</code> &mdash; boolean attributes here use presence + an explicit <code>="false"</code> to opt out of defaults.</p>
+                <temporal-date-range-picker id="dtr-unlinked" linked-calendars="false" auto-update-input="false"></temporal-date-range-picker>
+                <div class="output" id="dtr-unlinked-output"></div>
+                <div>
+<pre><code>&lt;temporal-date-range-picker
+    id="dtr-unlinked"
+     linked-calendars="false"
+     auto-update-input="false"&gt;
+&lt;/temporal-date-range-picker&gt;</code></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>3. Custom locale via attributes</h2>
+                <p class="desc"><code>format</code>, <code>separator</code>, <code>apply-label</code>, <code>cancel-label</code> attributes.</p>
+                <temporal-date-range-picker id="dtr-locale" format="DD/MM/YYYY" separator=" au " apply-label="Appliquer" cancel-label="Annuler"></temporal-date-range-picker>
+                <div class="output" id="dtr-locale-output"></div>
+                <div>
+<pre><code>&lt;temporal-date-range-picker 
+    id="dtr-locale" 
+    format="DD/MM/YYYY" 
+    separator=" au " 
+    apply-label="Appliquer" 
+    cancel-label="Annuler"&gt;
+&lt;/temporal-date-range-picker&gt;</code></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>4. Provided your own &lt;input&gt;</h2>
+                <p class="desc">A child <code>&lt;input&gt;</code> is adopted instead of the element creating its own.</p>
+                <temporal-date-range-picker id="dtr-owninput">
+                    <input type="text" placeholder="pick a range&hellip;">
+                </temporal-date-range-picker>
+                <div class="output" id="dtr-owninput-output"></div>
+                <div>
+<pre><code>&lt;temporal-date-range-picker 
+    id="dtr-owninput"&gt;
+    &lt;input type="text"
+        placeholder="pick a range&hellip;"&gt;
+&lt;/temporal-date-range-picker&gt;</code></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>5. JS properties: ranges, isInvalidDate</h2>
+                <p class="desc"><code>.ranges</code>, <code>.isInvalidDate</code> set as JS properties before the element connects.</p>
+                <temporal-date-range-picker id="dtr-props"></temporal-date-range-picker>
+                <div class="output" id="dtr-props-output"></div>
+                <div>
+<pre><code>&lt;temporal-date-range-picker
+    id="dtr-props"&gt;
+&lt;/temporal-date-range-picker&gt;</code></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>6. Escape hatch: <code>.picker</code></h2>
+                <p class="desc">Calling <code>.picker.setStartDate(...)</code> directly on the underlying <code>DateRangePicker</code> instance, plus the element's own <code>.setStartDate()</code> convenience method.</p>
+                <temporal-date-range-picker id="dtr-escape"></temporal-date-range-picker>
+                <button id="dtr-escape-btn" type="button">Jump to 2030-01-01</button>
+                <div class="output" id="dtr-escape-output"></div>
+                <div>
+<pre><code>&lt;temporal-date-range-picker 
+    id="dtr-escape"&gt;
+&lt;/temporal-date-range-picker&gt;</code></pre>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Temporal ships natively in modern browsers (Firefox 139+, Chrome 144+). This polyfill
+             is only needed as a fallback for browsers without native support yet (e.g. Safari). -->
+        <script src="https://cdn.jsdelivr.net/npm/@js-temporal/polyfill/dist/index.umd.js" type="text/javascript"></script>
+        <script src="../dist/temporal-datetimerange-picker.js"></script>
+        <script>
+            function report(outputId) {
+                var el = document.getElementById(outputId);
+                return function (start, end) {
+                    el.textContent = 'Selected: ' + start.format('YYYY-MM-DD') + ' → ' + end.format('YYYY-MM-DD');
+                };
+            }
+        </script>
+        <script>
+            window.addEventListener('load', function () {
+                var Temporal = window.Temporal || window.temporal.Temporal;
+                function startOfDay(t) { return t.with({ hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 }); }
+                function endOfDay(t) { return t.with({ hour: 23, minute: 59, second: 59, millisecond: 999, microsecond: 999, nanosecond: 999 }); }
+                var now = Temporal.Now.plainDateTimeISO();
+
+                document.getElementById('dtr-attrs').callback = report('dtr-attrs-output');
+                document.getElementById('dtr-unlinked').callback = report('dtr-unlinked-output');
+                document.getElementById('dtr-locale').callback = report('dtr-locale-output');
+                document.getElementById('dtr-owninput').callback = report('dtr-owninput-output');
+
+                // These elements are already connected by now (they upgraded as soon as the
+                // library script above registered the tag) - setting .ranges/.isInvalidDate/
+                // .callback still works because those setters rebuild the picker when needed.
+                var propsEl = document.getElementById('dtr-props');
+                propsEl.ranges = {
+                    'Today': [startOfDay(now), endOfDay(now)],
+                    'Last 7 Days': [startOfDay(now.subtract({ days: 6 })), endOfDay(now)]
+                };
+                propsEl.isInvalidDate = function (d) {
+                    var day = d.day(); // 0 = Sunday .. 6 = Saturday
+                    return day === 0 || day === 6;
+                };
+                propsEl.callback = report('dtr-props-output');
+
+                var escapeEl = document.getElementById('dtr-escape');
+                escapeEl.callback = report('dtr-escape-output');
+
+                document.getElementById('dtr-escape-btn').addEventListener('click', function () {
+                    // Default locale.format here is MM/DD/YYYY, so string dates must match that shape.
+                    escapeEl.picker.setStartDate('01/01/2030');
+                    escapeEl.setEndDate('01/05/2030');
+                });
+            });
+        </script>
+    </body>
+</html>
